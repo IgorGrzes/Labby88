@@ -1,26 +1,25 @@
-"""
-Manager class for handling apartment management operations.
-"""
+"""Manager class for handling apartment management operations."""
 
-from typing import List
-from datetime import datetime
+from datetime import UTC, datetime
 
 from src.models import (
     Apartment,
+    ApartmentEvent,
+    ApartmentSettlement,
     Bill,
     Parameters,
     Tenant,
-    ApartmentEvent,
     TenantBlacklistEntry,
     TenantSettlement,
     Transfer,
-    ApartmentSettlement,
 )
+
+MIN_MONTH = 1
+MAX_MONTH = 12
 
 
 class Manager:
-    """
-    Manager class responsible for loading data and providing methods
+    """Manager class responsible for loading data and providing methods
     to manage apartments, tenants, transfers, bills, and apartment events.
     """
 
@@ -43,21 +42,24 @@ class Manager:
         self.transfers = Transfer.from_json_file(self.parameters.transfers_json_path)
         self.bills = Bill.from_json_file(self.parameters.bills_json_path)
         self.tenants_blacklist = TenantBlacklistEntry.from_json_file(
-            self.parameters.tenants_blacklist_json_path
+            self.parameters.tenants_blacklist_json_path,
         )
 
     def load_additional_data(self):
         """Load additional data such as apartment events from JSON files."""
         self.apartment_events = ApartmentEvent.from_json_file(
-            self.parameters.apartment_events_json_path
+            self.parameters.apartment_events_json_path,
         )
 
     def generate_apartment_events_report(
-        self, apartment_key: str, only_unsolved: bool = True
-    ) -> List[ApartmentEvent]:
+        self,
+        apartment_key: str,
+        only_unsolved: bool = True,
+    ) -> list[ApartmentEvent]:
         """Generate a report of apartment events for a given apartment key."""
         if apartment_key not in self.apartments:
-            raise ValueError("Apartment key does not exist")
+            msg = "Apartment key does not exist"
+            raise ValueError(msg)
         return [
             event
             for event in self.apartment_events
@@ -77,11 +79,15 @@ class Manager:
         return self.apartments.get(apartment_key, None)
 
     def get_apartment_costs(
-        self, apartment_key: str, year: int = None, month: int = None
+        self,
+        apartment_key: str,
+        year: int | None = None,
+        month: int | None = None,
     ) -> float | None:
         """Calculate the total costs for a given apartment, optionally filtered by year/month."""
-        if month is not None and (month < 1 or month > 12):
-            raise ValueError("Month must be between 1 and 12")
+        if month is not None and (month < MIN_MONTH or month > MAX_MONTH):
+            msg = "Month must be between 1 and 12"
+            raise ValueError(msg)
         if apartment_key not in self.apartments:
             return None
         total_cost = 0.0
@@ -95,11 +101,15 @@ class Manager:
         return total_cost
 
     def get_settlement(
-        self, apartment_key: str, year: int, month: int
+        self,
+        apartment_key: str,
+        year: int,
+        month: int,
     ) -> ApartmentSettlement | None:
         """Get the apartment settlement for a given apartment key, year, and month."""
-        if month < 1 or month > 12:
-            raise ValueError("Month must be between 1 and 12")
+        if month < MIN_MONTH or month > MAX_MONTH:
+            msg = "Month must be between 1 and 12"
+            raise ValueError(msg)
         if apartment_key not in self.apartments:
             return None
         total_cost = self.get_apartment_costs(apartment_key, year, month)
@@ -115,11 +125,16 @@ class Manager:
         )
 
     def create_tenants_settlements(
-        self, apartment_settlement: ApartmentSettlement
-    ) -> List[TenantSettlement] | None:
+        self,
+        apartment_settlement: ApartmentSettlement,
+    ) -> list[TenantSettlement] | None:
         """Create tenant settlements based on the apartment settlement."""
-        if apartment_settlement.month < 1 or apartment_settlement.month > 12:
-            raise ValueError("Month must be between 1 and 12")
+        if (
+            apartment_settlement.month < MIN_MONTH
+            or apartment_settlement.month > MAX_MONTH
+        ):
+            msg = "Month must be between 1 and 12"
+            raise ValueError(msg)
         if apartment_settlement.apartment not in self.apartments:
             return None
         tenants_in_apartment = [
@@ -136,16 +151,18 @@ class Manager:
                 apartment_settlement=apartment_settlement.key,
                 month=apartment_settlement.month,
                 year=apartment_settlement.year,
-                total_due_pln=apartment_settlement.total_due_pln
-                / len(tenants_in_apartment),
+                total_due_pln=(
+                    apartment_settlement.total_due_pln / len(tenants_in_apartment)
+                ),
             )
             for tenant in tenants_in_apartment
         ]
 
-    def get_debtors(self, apartment_key: str, year: int, month: int) -> List[str]:
+    def get_debtors(self, apartment_key: str, year: int, month: int) -> list[str]:
         """Get a list of tenant names (debtors) for a given apartment key, year, and month."""
-        if month < 1 or month > 12:
-            raise ValueError("Month must be between 1 and 12")
+        if month < MIN_MONTH or month > MAX_MONTH:
+            msg = "Month must be between 1 and 12"
+            raise ValueError(msg)
         output = []
         settlement = self.get_settlement(apartment_key, year, month)
         tenant_settlements = self.create_tenants_settlements(settlement)
@@ -181,7 +198,7 @@ class Manager:
         """Check if the total deposits from tenants cover the total due amounts."""
         total_deposits = 0.0
         total_due = 0.0
-        for _, tenant in self.tenants.items():
+        for tenant in self.tenants.values():
             total_deposits += sum(
                 transfer.amount_pln
                 for transfer in self.transfers
@@ -206,10 +223,12 @@ class Manager:
 
     def has_any_bills(self, apartment_key: str, year: int, month: int) -> bool:
         """Check if there are any bills for a given apartment key, year, and month."""
-        if month < 1 or month > 12:
-            raise ValueError("Month must be between 1 and 12")
+        if month < MIN_MONTH or month > MAX_MONTH:
+            msg = "Month must be between 1 and 12"
+            raise ValueError(msg)
         if apartment_key not in self.apartments:
-            raise ValueError("Apartment key does not exist")
+            msg = "Apartment key does not exist"
+            raise ValueError(msg)
         return any(
             bill
             for bill in self.bills
@@ -244,9 +263,25 @@ class Manager:
                 and transfer.settlement_month is not None
             ):
                 agreement_from = self.tenants[transfer.tenant].date_agreement_from
-                agreement_from = datetime.strptime(agreement_from, "%Y-%m-%d").date()
+                agreement_from = (
+                    datetime.strptime(
+                        agreement_from,
+                        "%Y-%m-%d",
+                    )
+                    .replace(tzinfo=UTC)
+                    .date()
+                )
+
                 agreement_to = self.tenants[transfer.tenant].date_agreement_to
-                agreement_to = datetime.strptime(agreement_to, "%Y-%m-%d").date()
+                agreement_to = (
+                    datetime.strptime(
+                        agreement_to,
+                        "%Y-%m-%d",
+                    )
+                    .replace(tzinfo=UTC)
+                    .date()
+                )
+
                 if (transfer.settlement_year < agreement_from.year) or (
                     transfer.settlement_year > agreement_to.year
                 ):

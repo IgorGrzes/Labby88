@@ -25,16 +25,16 @@ def format_currency(amount: float) -> str:
 def display_apartments(manager):
     """Display all apartments with their rooms and bills"""
     print_section_header("APARTMENTS")
-    
+
     for apartment in manager.apartments.values():
         print(f"\n📍 {apartment.name} ({apartment.key})")
         print(f"   Location: {apartment.location}")
         print(f"   Total Area: {apartment.area_m2} m²")
-        
+
         print_subsection_header("Rooms")
         for room in apartment.rooms.values():
             print(f"      • {room.name:<25} {room.area_m2:>6} m²")
-        
+
         # Find bills for this apartment
         apartment_bills = [bill for bill in manager.bills if bill.apartment == apartment.key]
         if apartment_bills:
@@ -47,7 +47,7 @@ def display_apartments(manager):
 def display_tenants(manager):
     """Display all tenants with their details and transfers"""
     print_section_header("TENANTS")
-    
+
     for tenant in manager.tenants.values():
         print(f"\n👤 {tenant.name}")
         print(f"   Apartment: {tenant.apartment}")
@@ -55,7 +55,7 @@ def display_tenants(manager):
         print(f"   Rent: {format_currency(tenant.rent_pln)}/month")
         print(f"   Deposit: {format_currency(tenant.deposit_pln)}")
         print(f"   Agreement: {tenant.date_agreement_from} to {tenant.date_agreement_to}")
-        
+
         # Find transfers for this tenant
         tenant_transfers = [transfer for transfer in manager.transfers if transfer.tenant == tenant.name]
         if tenant_transfers:
@@ -148,7 +148,7 @@ def display_monthly_settlement(manager, apartment_key: str, year: int, month: in
     print(f"\n{'=' * 70}\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parameters = Parameters()
     manager = Manager(parameters)
 

@@ -1,8 +1,8 @@
 {
-	"python.analysis.extraPaths": [
-      	".venv/Lib/site-packages"
-    ],
-  	"[python]": {
-
+    "[python]" : {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit"
+        }
     }
 }

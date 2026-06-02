@@ -1,7 +1,12 @@
 import pytest
-
 from pydantic import ValidationError
+
 from src.models import Apartment, Tenant
+
+EXPECTED_ROOMS_COUNT = 2
+EXPECTED_AREA = 50.0
+EXPECTED_RENT = 1500.0
+EXPECTED_DEPOSIT = 3000.0
 
 
 def test_apartment_fields():
@@ -9,17 +14,17 @@ def test_apartment_fields():
         key="apart-test",
         name="Test Apartment",
         location="Test Location",
-        area_m2=50.0,
+        area_m2=EXPECTED_AREA,
         rooms={
             "room-1": {"name": "Living Room", "area_m2": 30.0},
-            "room-2": {"name": "Bedroom", "area_m2": 20.0}
-        }
+            "room-2": {"name": "Bedroom", "area_m2": 20.0},
+        },
     )
     assert data.key == "apart-test"
     assert data.name == "Test Apartment"
     assert data.location == "Test Location"
-    assert data.area_m2 == 50.0
-    assert len(data.rooms) == 2
+    assert data.area_m2 == EXPECTED_AREA
+    assert len(data.rooms) == EXPECTED_ROOMS_COUNT
 
 
 def test_apartment_from_dict():
@@ -30,8 +35,8 @@ def test_apartment_from_dict():
         "area_m2": 50.0,
         "rooms": {
             "room-1": {"name": "Living Room", "area_m2": 30.0},
-            "room-2": {"name": "Bedroom", "area_m2": 20.0}
-        }
+            "room-2": {"name": "Bedroom", "area_m2": 20.0},
+        },
     }
     apartment = Apartment(**data)
     assert apartment.key == data["key"]
@@ -40,30 +45,31 @@ def test_apartment_from_dict():
     assert apartment.area_m2 == data["area_m2"]
     assert len(apartment.rooms) == len(data["rooms"])
 
-    data['area_m2'] = "25m2" # Invalid field
+    data["area_m2"] = "25m2"  # Invalid field
     with pytest.raises(ValidationError):
-        wrong_apartment = Apartment(**data)
+        Apartment(**data)
+
 
 def test_tenant_fields():
     tenant = Tenant(
-        name='Test Tenant',
-        apartment='apart-test',
-        room='test-room',
-        apartment_key='apart-test',
-        rent_pln=1500.0,
-        deposit_pln=3000.0,
-        date_agreement_from='2024-01-01',
-        date_agreement_to='2024-12-31'
+        name="Test Tenant",
+        apartment="apart-test",
+        room="test-room",
+        apartment_key="apart-test",
+        rent_pln=EXPECTED_RENT,
+        deposit_pln=EXPECTED_DEPOSIT,
+        date_agreement_from="2024-01-01",
+        date_agreement_to="2024-12-31",
     )
 
-    assert tenant.name == 'Test Tenant'
-    assert tenant.apartment == 'apart-test'
-    assert tenant.room == 'test-room'
-    assert tenant.apartment == 'apart-test'
-    assert tenant.rent_pln == 1500.0
-    assert tenant.deposit_pln == 3000.0
-    assert tenant.date_agreement_from == '2024-01-01'
-    assert tenant.date_agreement_to == '2024-12-31'
+    assert tenant.name == "Test Tenant"
+    assert tenant.apartment == "apart-test"
+    assert tenant.room == "test-room"
+    assert tenant.rent_pln == EXPECTED_RENT
+    assert tenant.deposit_pln == EXPECTED_DEPOSIT
+    assert tenant.date_agreement_from == "2024-01-01"
+    assert tenant.date_agreement_to == "2024-12-31"
+
 
 def test_tenant_from_dict():
     data = {
@@ -73,7 +79,7 @@ def test_tenant_from_dict():
         "rent_pln": 4324.0,
         "deposit_pln": 12356.0,
         "date_agreement_from": "2032-01-01",
-        "date_agreement_to": "2033-01-01"
+        "date_agreement_to": "2033-01-01",
     }
     tenant = Tenant(**data)
     assert tenant.name == data["name"]
@@ -81,6 +87,6 @@ def test_tenant_from_dict():
     assert tenant.room == data["room"]
     assert tenant.rent_pln == data["rent_pln"]
 
+    data["rent_pln"] = "1500PLN"  # Invalid field
     with pytest.raises(ValidationError):
-        data['rent_pln'] = "1500PLN" # Invalid field
-        wrong_tenant = Tenant(**data)
+        Tenant(**data)

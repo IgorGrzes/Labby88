@@ -1,0 +1,9 @@
+[lint]
+select = ["ALL"]
+ignore = [
+    "D", "ANN", "T201", "FBT", "ERA001", "BLE001",
+    "TRY003", # Ignoruje długie wiadomości wpisywane wprost do wyjątków
+    "EM101",  # Ignoruje wpisywanie stringów bezpośrednio przy wywoływaniu wyjątków
+    "DTZ007", # Ignoruje brak stref czasowych w funkcjach datetime
+    "RUF013"  # Pozwala na starszy zapis opcjonalnych argumentów funkcji
+]
